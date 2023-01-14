@@ -1,0 +1,97 @@
+#!/bin/bash
+# Script to run export and Import Rows of Views as tables 
+# Views  Exported : 
+# Tables created from Import :
+# Usage : ./script.sh SID 
+# Script is designed for Execution on Linux Servers 
+
+if [ $# ne 1 ]
+  then 
+   echo "Script has been not been executed with Required Arguments " 
+   echo "Usage : export_custom_views.sh SID "
+   exit 1
+fi 
+
+unset ORACLE_HOME
+unset ORACLE_SID
+
+
+export ORACLE_SID=$1
+export ORACLE_HOME=`cat /etc/oratab|grep -v '#'|grep '$1'|cut -d':' -f2`
+export PATH=$ORACLE_HOME/BIN:$PATH 
+export DT=`date +%d%m%Y`
+
+DBISUP1=`sqlplus -s /nolog  << EOF |grep -v 'Connected'
+conn / as sysdba
+set pagesize 0 feed off echo off
+select status from v\\$instance ; 
+quit 
+EOF
+`
+DBISUP2 =`ps -ef|grep smon|grep -v 'ASM|12|19|grep'|grep '$1'|wc-l`
+
+echo " Creating parfile for Views Export" 
+echo "                                  "
+echo "###### Export Par file ######
+userd='/as sysdba'
+directorty=DPDUMP
+dumpfile=exp_view_as_Tables_$DT_%U.dmp 
+logfile=exp_view_as_Tables_$DT.log
+compression=all 
+parallel=4
+logtime=all
+metrics=y
+cluster=N
+views_as_tables=sch.view1,sch.view2,sch.view3,sch.view4" > EXP_view_$DT.par 
+
+
+if [ "$DBISUP1" == "OPEN" ] && [[ &DBISUP2 eq 1 ]]
+  then 
+	echo "Database '$1' is in Open mode "
+	echo " Proceeding with export Opertaion "
+	$ORACLE_HOME/bin/expdp parfile=EXP_view_${DT}.par > exp_views_$DT.log 
+	echo " Backup job Completed " 
+  else 
+   echo " Database $1 is not in open state "
+   echo " stopping the Script execution " 
+   exit 1
+fi 
+
+EXP_err_cnt=`cat exp_views_$DT.log|grep -i 'error'|wc-l`
+
+cat exp_views_$DT.log|grep dmp |awk '{print $3}' > dumplist_$DT.log
+
+if [ $EXP_err_cnt ge 1 ]
+ then 
+  echo "Export has failed Or Comleted with errors "
+  echo "Check the Export Log to Detemine the error " 
+  cat dumplist_$DT.log
+ else 
+  echo " Export Backup has been completed with No errors " 
+  echo " Below Dumpfiles have been created for Backup :" 
+  cat dumplist_$DT.log 
+fi  
+
+
+
+exit 
+
+
+
+
+Notes : 
+
+1) Modify the Export Directory as per Your Environment Values . 
+2) modify the names of views 
+    -> "sch" value should be replaced with your Schema/Username 
+    -> Repalce Views names as per your requiremen
+ 3) Test the Script in you Lower Environments 
+ 4) suggestions are requested to improve the script . 
+
+
+
+
+
+
+
+
