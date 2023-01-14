@@ -34,19 +34,18 @@ CRTFL=Table_creae_$DT.sql
 echo "Generating sql File to Gather count of Rows in Tables and Dropping Tables \n "
 echo "                                       "
 $ORACLE_HOME/bin/sqlplus -s /nolog << EOF | awk '!/^Connected\./' > $CNTFL
-connect / as sysdba
-set pagesize 0 feed off verify off
+connect BI/BI
 select 'spool Table_count_Drop_$DT.log' from dual ;
+set pagesize 0 feed off verify off
 select 'set pagesize 0 feed on verify off timing on time on ;' from dual ;
-select 'select VB.name,VS.status  from v\$database VB,v\$instance VS  ;' from dual ;
-select 'select count(*) as "MQ_ACTIVE_COUNT"  from BI.MQ_ACTIVE_TBL ;' from dual ;
-select 'select count(*) as "MQ_DC_COUNT"  from BI.MQ_DC_TBL ;' from dual ;
-select 'select count(*) as "ICC_ACTIVE_COUNT"  from BI.ICC_ACTIVE_TBL ;' from dual ;
-select 'select count(*) as "ICC_DC_COUNT"  from BI.ICC_DC_TBL ;' from dual ;
-select 'drop table BI.MQ_ACTIVE_TBL purge ; ' from dual ; 
-select 'drop table BI.MQ_DC_TBL  ; ' from dual ;
-select 'drop table BI.ICC_ACTIVE_TBL ; ' from dual ;
-select 'drop table BI.ICC_DC_TBL ; ' from dual ;
+select 'select count(*) as "MQ_ACTIVE_COUNT"  from MQ_ACTIVE_TBL ;' from dual ;
+select 'select count(*) as "MQ_DC_COUNT"  from MQ_DC_TBL ;' from dual ;
+select 'select count(*) as "ICC_ACTIVE_COUNT"  from ICC_ACTIVE_TBL ;' from dual ;
+select 'select count(*) as "ICC_DC_COUNT"  from ICC_DC_TBL ;' from dual ;
+select 'drop table MQ_ACTIVE_TBL purge ; ' from dual ; 
+select 'drop table MQ_DC_TBL purge ; ' from dual ;
+select 'drop table ICC_ACTIVE_TBL purge ; ' from dual ;
+select 'drop table ICC_DC_TBL purge ; ' from dual ;
 select 'spool off;' from dual ; 
 EOF
 
@@ -55,14 +54,14 @@ echo "Generating Sql file to Create Tables from Views \n "
 echo "                                  
                  "
 $ORACLE_HOME/bin/sqlplus -s /nolog << EOF | awk '!/^Connected\./' > $CRTFL
-connect / as sysdba
-set pagesize 0 feed on verify off
+connect BI/BI
 select 'spool Table_create_$DT.log' from dual ;
+set pagesize 0 feed on verify off
 select 'set pagesize 0 feed on verify off timing on time on ;' from dual ;
-select 'create table BI.MQ_ACTIVE_TBL as select * from IMCLMQSMS.MQ_ACTIVE_CUST_PRODUCT_LTD;' from dual ;
-select 'create table BI.MQ_DC_TBL as select * from IMCLMQSMS.MQ_DC_CUST_PRODUCT_LTD;' from dual ;
-select 'create table BI.ICC_ACTIVE_TBL as select * from BD_GIL.ICC_ACTIVE_CUSTOMER_PRODUCTS;' from dual ;
-select 'create table BI.ICC_DC_TBL as select * from BD_GIL.ICC_DC_CUSTOMER_PRODUCTS;' from dual ;
+select 'create table MQ_ACTIVE_TBL as select * from MQ_ACTIVE_CUST_PRODUCT_LTD\@"BI_IMCLDB";' from dual ;
+select 'create table MQ_DC_TBL as select * from MQ_DC_CUST_PRODUCT_LTD\@"BI_IMCLDB";' from dual ;
+select 'create table ICC_ACTIVE_TBL as select * from ICC_ACTIVE_CUSTOMER_PRODUCTS\@"BI_GILPRD";' from dual ;
+select 'create table ICC_DC_TBL as select * from ICC_DC_CUSTOMER_PRODUCTS\@"BI_GILPRD";' from dual ;
 select 'spool off;' from dual ;  
 EOF
 
