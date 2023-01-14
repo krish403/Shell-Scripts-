@@ -45,7 +45,7 @@ cluster=N
 views_as_tables=sch.view1,sch.view2,sch.view3,sch.view4" > EXP_view_$DT.par 
 
 
-if [ "$DBISUP1" == "OPEN" ] && [[ &DBISUP2 eq 1 ]]
+if [ "$DBISUP1" == "OPEN" ] && [[ &DBISUP2 -eq 1 ]]
   then 
 	echo "Database '$1' is in Open mode "
 	echo " Proceeding with export Opertaion "
