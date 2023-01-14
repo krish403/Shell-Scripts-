@@ -1,0 +1,78 @@
+#!/bin/bash
+#  Script to Re-create tables from Views on Daily basis 
+#  Usage : Daily_table_load.sh SID 
+#  The script is desgined for Execution in Linux Servers 
+#
+#
+#
+#
+
+if [ $# -ne 1] 
+  then 
+  echo " Script Execution Failed \n SID  DB Name Should be Passed as Argument \n Usage : Daily_table_load.sh SID "
+  echo "             "
+  exit 1
+fi 
+
+##########################Variables for Script Execution ##########################
+
+unset ORACLE_SID
+unset ORACLE_HOME 
+export ORACLE_SID=$1
+export ORACLE_HOME=`cat /etc/oratab |grep -v '#' |grep -i '$1' |cut -d':' -f2`
+export PATH=$ORACLE_HOME/bin:$PATH ;
+export DTSTRN=`/bin/date +%m%d%y%H%M`
+
+echo " Recreating Tables in DB $1  \n\n RDBMS HOME for DB $1 is $ORACLE_HOME "
+
+####################################################################################
+
+CNTFL=Table_count_Drop_$DT.sql
+LOGFL=Drop_create_$DT.log
+CRTFL=Table_creae_$DT.sql
+
+echo "Generating sql File to Gather count of Rows in Tables and Dropping Tables \n "
+echo "                                       "
+$ORACLE_HOME/bin/sqlplus -s /nolog << EOF | awk '!/^Connected\./' > $CNTFL
+connect / as sysdba
+set pagesize 0 feed off verify off
+select 'spool Table_count_Drop_$DT.log' from dual ;
+select 'set pagesize 0 feed on verify off timing on time on ;' from dual ;
+select 'select VB.name,VS.status  from v\$database VB,v\$instance VS  ;' from dual ;
+select 'select count(*) as "MQ_ACTIVE_COUNT"  from BI.MQ_ACTIVE_TBL ;' from dual ;
+select 'select count(*) as "MQ_DC_COUNT"  from BI.MQ_DC_TBL ;' from dual ;
+select 'select count(*) as "ICC_ACTIVE_COUNT"  from BI.ICC_ACTIVE_TBL ;' from dual ;
+select 'select count(*) as "ICC_DC_COUNT"  from BI.ICC_DC_TBL ;' from dual ;
+select 'drop table BI.MQ_ACTIVE_TBL purge ; ' from dual ; 
+select 'drop table BI.MQ_DC_TBL  ; ' from dual ;
+select 'drop table BI.ICC_ACTIVE_TBL ; ' from dual ;
+select 'drop table BI.ICC_DC_TBL ; ' from dual ;
+select 'spool off;' from dual ; 
+EOF
+
+
+echo "Generating Sql file to Create Tables from Views \n "
+echo "                                  
+                 "
+$ORACLE_HOME/bin/sqlplus -s /nolog << EOF | awk '!/^Connected\./' > $CRTFL
+connect / as sysdba
+set pagesize 0 feed on verify off
+select 'spool Table_create_$DT.log' from dual ;
+select 'set pagesize 0 feed on verify off timing on time on ;' from dual ;
+select 'create table BI.MQ_ACTIVE_TBL as select * from IMCLMQSMS.MQ_ACTIVE_CUST_PRODUCT_LTD;' from dual ;
+select 'create table BI.MQ_DC_TBL as select * from IMCLMQSMS.MQ_DC_CUST_PRODUCT_LTD;' from dual ;
+select 'create table BI.ICC_ACTIVE_TBL as select * from BD_GIL.ICC_ACTIVE_CUSTOMER_PRODUCTS;' from dual ;
+select 'create table BI.ICC_DC_TBL as select * from BD_GIL.ICC_DC_CUSTOMER_PRODUCTS;' from dual ;
+select 'spool off;' from dual ;  
+EOF
+
+
+###echo "Gathering table Count ,Dropping Tables "
+###$ORACLE_HOME/bin/sqlplus -s /nolog << EOF | awk '!/^Connected\./' > $LOGFL
+###connect / as sysdba
+###@$CNTFL
+###@$CRTFL
+###exit;
+###EOF
+
+exit 
