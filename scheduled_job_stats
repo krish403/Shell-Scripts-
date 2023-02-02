@@ -48,7 +48,7 @@ EOF
 if [ -e job_check_${DT}.log ]
   then 
     export JOB_ERROR_MSG=" Scheduler Jobs  are Broken or Disabled in Database $db on server $sname \n\n Refer the Log file attached in for the Job Details   "  
-	echo -e $JOB_ERROR_MSG | /bin/mailx -a job_check_${DT}.log -s "Job Stratus for Database $db at $DT" $MAIL_LIST
+	echo -e $JOB_ERROR_MSG | /bin/mailx -a job_check_${DT}.log -s "Job Status for Database $db at $DT" $MAIL_LIST
   else 
     echo "JOB status is Normal for Database $db on server $sname" 
 fi 
