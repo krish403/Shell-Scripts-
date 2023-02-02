@@ -1,0 +1,58 @@
+#!/bin/bash
+#  Script       : scheduled_job_stats.sh 
+#  Description  : Script to identify Disabled or Broken  Scheduler Jobs
+#  Instructions : Script should be executed in below format 
+#                  sh scheduled_job_stats.sh DBANME 
+#
+################## Parameter For Script ######################
+
+if [ $# ne 1 ]
+  then 
+  echo " Script has been executed with wrong no of arguments "
+  echo " Execute Script in below format " 
+  echo " sh $0 DBNAME" 
+  exit 1
+fi 
+
+
+unset ORACLE_SID
+unset ORACLE_HOME 
+export sname=`hostname`
+export DT=`date +%d%m%Y%H`
+export db=$1
+export ORACLE_HOME=`cat /etc/oratab|grep $db|awk -f ":" '{print $2}'`
+export ORACLE_SID=`ps -ef|grep smon|grep -v 'ASM|grep'||grep $db|awk -f '{print $8}'|cut -d_ -f3`
+export PATH=$ORACLE_HOME/bin:$PATH ;
+export TOMAIl=`user@Mailid.com`
+
+################## Program part ################################
+
+echo "
+set verify off heading off echo off termout on trimspool on 
+set lines 550 pages 0
+set colsep '||'
+col job_name for a25
+col state for a25
+col ENABLED for a25
+spool job_check_${DT}.log
+select job_nmae,state,enabled from dba_scheduler_jobs where state no in ('SCHEDULED','RUNNING','COMPLETED','SUCCEEDED') ;
+spool off;" > job_check_$DT.sql
+
+$ORACLE_HOME/bin/sqlplus -s /nolog <<EOF 
+connect / as sysdba
+@job_check_$DT.sql
+exit ;
+EOF
+
+
+lncnt =`cat job_check_${DT}.log|grep -v 'Sql'|wc -l`
+
+if [ -e job_check_${DT}.log ]||[ $lnct ge 1]
+  then 
+    echo " Scheduler Jobs  are Broken or Diabled in Database $db on server $server \n\n Refer the Log file attached in message for the Jobs  "  >JOB_ERROR_MSG 
+	cat $JOB_ERROR_MSG | mail -x -a job_check_${DT}.log -s "Job Stratus for Database $db at $DT" $TOMAIl
+  else 
+    echo "JOB status is Normal for Database $db on server $sname" 
+fi 
+	
+exit ; 
