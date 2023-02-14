@@ -1,0 +1,11 @@
+#!/bin/bash
+##############################################
+# Script to Backup crontab on daily basis 
+##############################################
+#set -x
+export server=`hostname`
+
+
+# To take the backup of crontab
+crontab -l > /home/oracle/crontab_`hostname`_`date '+%Y%m%d%H%M%S'`
+exit
